@@ -3,4 +3,4 @@ FROM openjdk:8-jre-alpine
 # copy fat WAR
 COPY target/gateway-0.0.1-SNAPSHOT.jar /gateway-service.jar
 # runs application
-CMD ["/usr/bin/java", "-jar","/gateway-service.jar"]
+CMD ["/usr/bin/java", "-jar","-Deureka.host=eureka-0.eureka:8761","/gateway-service.jar"]
