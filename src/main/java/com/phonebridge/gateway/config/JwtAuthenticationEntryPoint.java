@@ -1,4 +1,4 @@
-package com.phonebridge.gateway.authserver.config;
+package com.phonebridge.gateway.config;
 
 import java.io.IOException;
 import java.io.Serializable;

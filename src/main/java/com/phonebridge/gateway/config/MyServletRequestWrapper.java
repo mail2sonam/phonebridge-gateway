@@ -1,4 +1,4 @@
-package com.phonebridge.gateway.authserver.config;
+package com.phonebridge.gateway.config;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;

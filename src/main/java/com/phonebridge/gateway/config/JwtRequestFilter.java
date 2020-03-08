@@ -1,6 +1,9 @@
-package com.phonebridge.gateway.authserver.config;
+package com.phonebridge.gateway.config;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -9,24 +12,21 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.phonebridge.gateway.authserver.service.CustUserDetailsService;
-
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 
 @Component 
 public class JwtRequestFilter extends OncePerRequestFilter{
 
 	@Autowired
-	private CustUserDetailsService custUserDetailsService;
-	
-	@Autowired
 	private JwtTokenUtil jwtTokenUtil;
+	
+	private static final String AUTHORITIES_KEY = "authorities";
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -35,8 +35,9 @@ public class JwtRequestFilter extends OncePerRequestFilter{
 		final String requestTokenHeader = request.getHeader("Authorization");
 		
 		String username =null;
+		String jwtToken = null;
 		if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
-		String jwtToken = requestTokenHeader.substring(7);
+			jwtToken = requestTokenHeader.substring(7);
 		
 		try {
 			username = jwtTokenUtil.getUsernameFromToken(jwtToken);
@@ -51,13 +52,20 @@ public class JwtRequestFilter extends OncePerRequestFilter{
 		
 		if (username != null &&
 		  SecurityContextHolder.getContext().getAuthentication() == null) {
-		 
-		UserDetails userDetails = this.custUserDetailsService.loadUserByUsername(username); 
-		UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = 
-		  new UsernamePasswordAuthenticationToken( userDetails, null,
-				  userDetails.getAuthorities()); 
-		usernamePasswordAuthenticationToken.setDetails(
-			  new WebAuthenticationDetailsSource().buildDetails(request)); 
+		final String userName = username;
+		
+        final Claims claims = jwtTokenUtil.getAllClaimsFromToken(jwtToken);
+        
+		final Collection authorities =
+                Arrays.stream(claims.get(AUTHORITIES_KEY).toString().split(","))
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList());
+		
+		UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(userName, "",authorities);
+			/*
+			 * usernamePasswordAuthenticationToken.setDetails( new
+			 * WebAuthenticationDetailsSource().buildDetails(request));
+			 */
 		SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken); 
 		}
 		chain.doFilter(request, response);
