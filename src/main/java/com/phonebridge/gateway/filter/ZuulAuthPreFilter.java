@@ -1,6 +1,7 @@
 package com.phonebridge.gateway.filter;
 
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -17,6 +18,8 @@ import com.netflix.zuul.exception.ZuulException;
 @Component
 public class ZuulAuthPreFilter extends ZuulFilter {
 	
+	private static final String AUTHORITIES_KEY = "authorities";
+			
 	@Override
 	public boolean shouldFilter() {
 		return true;
@@ -40,9 +43,11 @@ public class ZuulAuthPreFilter extends ZuulFilter {
 		}
 		if(!userName.contains("::"))
 			return null;
+		String grantedAuthoritiesStr = grantedAuthorities.stream().map(ga->ga.getAuthority()).collect(Collectors.joining(",")); 
 		String[] usernameFromTokenArr = userName.split("::");
         ctx.addZuulRequestHeader("accountId", usernameFromTokenArr[0]);
-        ctx.addZuulRequestHeader("userId", usernameFromTokenArr[1]); 
+        ctx.addZuulRequestHeader("userId", usernameFromTokenArr[1]);
+        ctx.addZuulRequestHeader(AUTHORITIES_KEY, grantedAuthoritiesStr);
         return null;
 	}
 
